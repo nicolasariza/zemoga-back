@@ -1,0 +1,76 @@
+service: zemoga
+
+frameworkVersion: '2'
+
+custom:
+  tableName: 'portfolio'
+
+provider:
+  name: aws
+  runtime: nodejs12.x
+  lambdaHashingVersion: '20201221'
+  stage: dev
+  iam:
+    role:
+      statements:
+        - Effect: Allow
+          Action:
+            - dynamodb:Query
+            - dynamodb:Scan
+            - dynamodb:GetItem
+            - dynamodb:PutItem
+            - dynamodb:UpdateItem
+            - dynamodb:DeleteItem
+          Resource:
+            - Fn::GetAtt: [ PortfolioTable, Arn ]
+  environment:
+    DYNAMODB_TABLE: ${self:custom.tableName}
+
+functions:
+  create:
+    handler: portfolio/create.create
+    events:
+      - http:
+          path: portfolio
+          method: post
+          cors: true
+
+  list:
+    handler: portfolio/list.list
+    events:
+      - http:
+          path: portfolio
+          method: get
+          cors: true
+
+  get:
+    handler: portfolio/get.get
+    events:
+      - http:
+          path: portfolio/{id}
+          method: get
+          cors: true
+
+  update:
+    handler: portfolio/update.update
+    events:
+      - http:
+          path: portfolio/{id}
+          method: put
+          cors: true
+
+resources:
+  Resources:
+    PortfolioTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        AttributeDefinitions:
+          - AttributeName: id
+            AttributeType: S
+        KeySchema:
+          - AttributeName: id
+            KeyType: HASH
+        ProvisionedThroughput:
+          ReadCapacityUnits: 1
+          WriteCapacityUnits: 1
+        TableName: ${self:custom.tableName}
